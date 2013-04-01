@@ -38,16 +38,6 @@ Licensed under the MIT license.
 
 	var hasOwnProperty = Object.prototype.hasOwnProperty;
 
-	// Add default styles for tick labels and other text
-
-	$(function() {
-		$("head").prepend([
-			"<style id='flot-default-styles'>",
-			".flot-tick-label {font-size:smaller;color:#545454;}",
-			"</style>"
-		].join(""));
-	});
-
 	///////////////////////////////////////////////////////////////////////////
 	// The Canvas object is a wrapper around an HTML5 <canvas> tag.
 	//
@@ -109,6 +99,7 @@ Licensed under the MIT license.
 
 		// Collection of HTML div layers for text overlaid onto the canvas
 
+		this.textContainer = null;
 		this.text = {};
 
 		// Cache of text fragments and metrics, so we can avoid expensively
@@ -228,8 +219,25 @@ Licensed under the MIT license.
 		// Create the text layer if it doesn't exist
 
 		if (layer == null) {
+
+			// Create the text layer container, if it doesn't exist
+
+			if (this.textContainer == null) {
+				this.textContainer = $("<div class='flot-text'></div>")
+					.css({
+						position: "absolute",
+						top: 0,
+						left: 0,
+						bottom: 0,
+						right: 0,
+						'font-size': "smaller",
+						color: "#545454"
+					})
+					.insertAfter(this.element);
+			}
+
 			layer = this.text[classes] = $("<div></div>")
-				.addClass("flot-text " + classes)
+				.addClass(classes)
 				.css({
 					position: "absolute",
 					top: 0,
@@ -237,7 +245,7 @@ Licensed under the MIT license.
 					bottom: 0,
 					right: 0
 				})
-				.insertAfter(this.element);
+				.appendTo(this.textContainer);
 		}
 
 		return layer;
@@ -445,7 +453,6 @@ Licensed under the MIT license.
                     show: null, // null = auto-detect, true = always, false = never
                     position: "bottom", // or "top"
                     mode: null, // null or "time"
-                    timezone: null, // "browser" for local to the client or timezone for timezone-js
                     font: null, // null (derived from CSS in placeholder) or object like { size: 11, style: "italic", weight: "bold", family: "sans-serif", variant: "small-caps" }
                     color: null, // base color, labels, ticks
                     tickColor: null, // possibly different color of ticks, e.g. "rgba(0,0,0,0.15)"
@@ -461,14 +468,9 @@ Licensed under the MIT license.
                     reserveSpace: null, // whether to reserve space even if axis isn't shown
                     tickLength: null, // size in pixels of ticks, or "full" for whole line
                     alignTicksWithAxis: null, // axis number or null for no sync
-
-                    // mode specific options
                     tickDecimals: null, // no. of decimals, null means auto
                     tickSize: null, // number or [number, "unit"]
-                    minTickSize: null, // number or [number, "unit"]
-                    monthNames: null, // list of names of months
-                    timeformat: null, // format string to use
-                    twelveHourClock: false // 12 or 24 time in time mode
+                    minTickSize: null // number or [number, "unit"]
                 },
                 yaxis: {
                     autoscaleMargin: 0.02,
@@ -672,8 +674,15 @@ Licensed under the MIT license.
 
             axisCount = options.xaxes.length || 1;
             for (i = 0; i < axisCount; ++i) {
-                axisOptions = $.extend(true, {}, options.xaxis, options.xaxes[i]);
+
+                axisOptions = options.xaxes[i];
+                if (axisOptions && !axisOptions.tickColor) {
+                    axisOptions.tickColor = axisOptions.color;
+                }
+
+                axisOptions = $.extend(true, {}, options.xaxis, axisOptions);
                 options.xaxes[i] = axisOptions;
+
                 if (axisOptions.font) {
                     axisOptions.font = $.extend({}, fontDefaults, axisOptions.font);
                     if (!axisOptions.font.color) {
@@ -684,8 +693,15 @@ Licensed under the MIT license.
 
             axisCount = options.yaxes.length || 1;
             for (i = 0; i < axisCount; ++i) {
-                axisOptions = $.extend(true, {}, options.yaxis, options.yaxes[i]);
+
+                axisOptions = options.yaxes[i];
+                if (axisOptions && !axisOptions.tickColor) {
+                    axisOptions.tickColor = axisOptions.color;
+                }
+
+                axisOptions = $.extend(true, {}, options.yaxis, axisOptions);
                 options.yaxes[i] = axisOptions;
+
                 if (axisOptions.font) {
                     axisOptions.font = $.extend({}, fontDefaults, axisOptions.font);
                     if (!axisOptions.font.color) {
